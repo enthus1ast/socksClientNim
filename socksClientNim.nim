@@ -31,10 +31,6 @@ proc ipToBytes(ip:string): seq[char] =
   return result
 
 
-#def portToBytes(port:int): (char,char) =
-
-
-
 proc socks4(socksIp:string,socksPort:int,targetIp:string,targetPort:int) : Socket =
   discard """
     This returns a socket which is connected to the SOCKS proxy.
@@ -91,7 +87,12 @@ proc GET(so: Socket,host:string) : string =
     The socket has to be connected!
   """
   var httpGetHelo = "GET / HTTP/1.1\nHost: "&host&"\n\n"
-  so.send(httpGetHelo)
+  
+  try:
+    so.send(httpGetHelo)
+    info "[+] successfully send http get to remote server"
+  except:
+    error "[-] something breaks whil sending get request"
 
   var data = "LEER"
   var size= 100000
@@ -100,7 +101,7 @@ proc GET(so: Socket,host:string) : string =
     var respLen = so.recv(data,size,timeout)
     info "[+] made get request over SOCKS got " & $respLen & " bytes"
   except:
-    info "[-] something breaks while makeing get request"
+    error "[-] something breaks while receiving data from remote http server"
   return data
 
 
@@ -115,4 +116,3 @@ when isMainModule:
                         )
   echo mySocket.GET("getip.111mb.de")
   echo "\nDONE"
-  #discard readLine(stdin)
