@@ -52,7 +52,7 @@ proc socks4(socksIp:string,socksPort:int,targetIp:string,targetPort:int) : Socke
 
   # this is the socks header
   # 1: socks version (4 , 5 )
-  # 2: connection attempt
+  # 2: make tcp connect
   # 3: port high part
   # 4: port low part
   # 5-8: ip addr
