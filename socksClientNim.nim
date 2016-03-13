@@ -14,9 +14,13 @@ import strutils
 import math
 import logging
 
-
 var L = newConsoleLogger()
 addHandler(L)
+
+
+type
+  socksVersion = enum
+    SOCKS4, SOCKS4A, SOCKS5
 
 proc portToBytes(port:int): (char,char) =
   var byteHigh = math.floor(port / 256)
@@ -31,21 +35,38 @@ proc ipToBytes(ip:string): seq[char] =
   return result
 
 
-proc socks4(socksIp:string,socksPort:int,targetIp:string,targetPort:int) : Socket =
-  discard """
-    This returns a socket which is connected to the SOCKS proxy.
-    The SOCKS handshake is done so the socket should be connected to the
-    targetIP / targetPort
-  """
-
-
-  var so = socket()
+proc connectSocket(so:Socket,socksIp:string,socksPort:int) =
   try:
     so.connect(socksIp,TPort(socksPort))
     info("[+] Connected to SOCKS proxy server")
   except:
     error("[-] Could not reach SOCKS proxy server")
     raise
+
+proc charArrToStr(ar:openArray[char]) : string=
+  var outp = ""
+  for each in ar:
+    outp = outp & $each
+  return outp
+
+
+proc socks4(socksIp:string,socksPort:int,targetIp:string,targetPort:int, targetHostname="" ,version = SOCKS4a) : Socket =
+  discard """
+    This returns a socket which is connected to the SOCKS proxy.
+    The SOCKS handshake is done so the socket should be connected to the
+    targetIP / targetPort
+
+
+    version is either SOCKS4 SOCKS4a
+    targetHostname only is used when socks `version` is SOCKS4a
+    when you use targetHostname , targetIp is ignored
+  """
+
+  if version == SOCKS4a:
+    error "SOCKS4a is not implemented right now"
+
+  var so = socket()
+  so.connectSocket(socksIp,socksPort)
 
   var port = portToBytes(targetPort)
   var ip   = ipToBytes(targetIp)
@@ -58,13 +79,7 @@ proc socks4(socksIp:string,socksPort:int,targetIp:string,targetPort:int) : Socke
   # 5-8: ip addr
   # 9: is 0 when no username was supllied ( in our case always zero =) )
   var helo = [char(4), char(1), port[0], port[1] , ip[0], ip[1], ip[2], ip[3], char(0)]
-
-  var outp = ""
-
-  for each in helo:
-    outp = outp & $each
-
-  so.send(outp) # we send socks header
+  so.send(charArrToStr(helo)) # we send socks header
 
   var data:string = "LEER"
   var size: int = 8
@@ -80,6 +95,9 @@ proc socks4(socksIp:string,socksPort:int,targetIp:string,targetPort:int) : Socke
 
   return so # we return the connected socket for future use
 
+
+
+
 proc GET(so: Socket,host:string) : string =
   discard """
     This makes a raw http get request, only for testing : )
@@ -87,7 +105,7 @@ proc GET(so: Socket,host:string) : string =
     The socket has to be connected!
   """
   var httpGetHelo = "GET / HTTP/1.1\nHost: "&host&"\n\n"
-  
+
   try:
     so.send(httpGetHelo)
     info "[+] successfully send http get to remote server"
@@ -112,7 +130,8 @@ when isMainModule:
                           socksIp   = "127.0.0.1" ,   # die IP des SOCKS proxy
                           socksPort = 9999 ,          # der port auf dem der SOCKS proxy lauscht
                           targetIp = "85.214.59.56" , # die ip des rechners zu dem verbunden werden soll
-                          targetPort = 80             # der zielport des rechners zu dem verbunden werden soll
+                          targetPort = 80 ,            # der zielport des rechners zu dem verbunden werden soll
+                          version = socksVersion.SOCKS4a
                         )
   echo mySocket.GET("getip.111mb.de")
   echo "\nDONE"
