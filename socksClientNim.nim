@@ -34,6 +34,16 @@ proc ipToBytes(ip:string): seq[char] =
     result.add( char(parseInt(each)) )
   return result
 
+proc strToBytes(str:string): seq[char] = 
+  result = @[]
+  for each in str:
+    result.add( char(each) )
+
+  # is nim dooing this automatically ?? 
+  # result.add(char(0x00)) # we have to terminate the str with 0x00 
+  return result
+
+# echo dnsToBytes("getip.111mb.de")
 
 proc connectSocket(so:Socket,socksIp:string,socksPort:int) =
   try:
@@ -50,7 +60,7 @@ proc charArrToStr(ar:openArray[char]) : string=
   return outp
 
 
-proc socks4(socksIp:string,socksPort:int,targetIp:string,targetPort:int, targetHostname="" ,version = SOCKS4a) : Socket =
+proc socks4(socksIp:string,socksPort:int,targetIp:string,targetPort:int) : Socket =
   discard """
     This returns a socket which is connected to the SOCKS proxy.
     The SOCKS handshake is done so the socket should be connected to the
@@ -61,9 +71,6 @@ proc socks4(socksIp:string,socksPort:int,targetIp:string,targetPort:int, targetH
     targetHostname only is used when socks `version` is SOCKS4a
     when you use targetHostname , targetIp is ignored
   """
-
-  if version == SOCKS4a:
-    error "SOCKS4a is not implemented right now"
 
   var so = socket()
   so.connectSocket(socksIp,socksPort)
@@ -97,6 +104,67 @@ proc socks4(socksIp:string,socksPort:int,targetIp:string,targetPort:int, targetH
 
 
 
+proc socks4a(socksIp:string,socksPort:int,targetDns:string,targetPort:int) : Socket =
+  discard """
+    This returns a socket which is connected to the SOCKS4a proxy.
+    The SOCKS4a handshake is done so the socket should be connected to the
+    targetDns / targetPort
+
+    SOCKS4a is able to ask the proxy to resolve the DNS.
+    This is able to connect to a tor .onion adress.
+  """
+  var so = socket()
+  so.connectSocket(socksIp,socksPort)
+
+  var port = portToBytes(targetPort)
+  #var ip   = ipToBytes("0.0.0.1")  # when we use socks4a we have to use a dummy address
+
+  var helo : seq[char] = @[]
+
+  # field 0: SOCKS version number, 1 byte, must be 0x04 for this version
+  helo.add(char(0x04))
+
+  # field 1: command code, 1 byte:
+  #   0x01 = establish a TCP/IP stream connection
+  #   0x02 = establish a TCP/IP port binding
+  helo.add(char(0x01))
+  # field 2: network byte order port number, 2 bytes
+  helo.add(char(port[0]))
+  helo.add(char(port[1]))
+  
+  # field 3: deliberate invalid IP address, 4 bytes, first three must be 0x00 and the last one must not be 0x00
+  helo.add(char(0x00) )
+  helo.add(char(0x00))
+  helo.add(char(0x00))
+  helo.add(char(0x01))
+
+  # field 4: the user ID string, variable length, terminated with a null (0x00)
+  helo.add(char(0x00))
+  # helo.add(char(0x00)  )
+  # field 5: the domain name of the host we want to contact, variable length, terminated with a null (0x00)  
+  for each in strToBytes(targetDns):
+    helo.add(char(each))
+  helo.add(char(0x00)  )
+
+
+  so.send(charArrToStr(helo)) # we send socks header
+
+  var data:string = "LEER"
+  var size: int = 8
+  var timeout : int=20000
+  discard so.recv(data,size,timeout)
+
+  # check if server has established the connection to the remote host
+  if data[0] == char(0) and data[1] == char(0x5a):
+    info("[+] SOCKS4a server has successfully established the connection.")
+  else:
+    error("[-] SOCKS4a server does not connected us to our desired remotehost")
+    raise
+
+  return so # we return the connected socket for future use
+
+
+
 
 proc GET(so: Socket,host:string) : string =
   discard """
@@ -114,7 +182,7 @@ proc GET(so: Socket,host:string) : string =
 
   var data = "LEER"
   var size= 100000
-  var timeout=5000
+  var timeout=20000
   try:
     var respLen = so.recv(data,size,timeout)
     info "[+] made get request over SOCKS got " & $respLen & " bytes"
@@ -125,13 +193,24 @@ proc GET(so: Socket,host:string) : string =
 
 
 when isMainModule:
-  var mySocket  = socks4( # Dies ist SOCKS version 4. NUR tcp und IP adressen!
+  # var mySocket4  = socks4( # Dies ist SOCKS version 4. NUR tcp und IP adressen!
+  #                         # Dies ist SOCKS v.4  NUR ip KEIN dns!!
+  #                         socksIp   = "127.0.0.1" ,   # die IP des SOCKS proxy
+  #                         socksPort = 6655 ,          # der port auf dem der SOCKS proxy lauscht
+  #                         targetIp = "85.214.59.56" , # die ip des rechners zu dem verbunden werden soll
+  #                         targetPort = 80 ,            # der zielport des rechners zu dem verbunden werden soll
+  #                         # version = socksVersion.SOCKS4a
+  #                       )
+  # echo mySocket4.GET("getip.111mb.de")
+
+  var mySocket4a  = socks4a( # Dies ist SOCKS version 4. NUR tcp und IP adressen!
                           # Dies ist SOCKS v.4  NUR ip KEIN dns!!
                           socksIp   = "127.0.0.1" ,   # die IP des SOCKS proxy
-                          socksPort = 9999 ,          # der port auf dem der SOCKS proxy lauscht
-                          targetIp = "85.214.59.56" , # die ip des rechners zu dem verbunden werden soll
+                          socksPort = 9050 ,          # der port auf dem der SOCKS proxy lauscht
+                          targetDns = "getip.111mb.de" , # die ip des rechners zu dem verbunden werden soll
                           targetPort = 80 ,            # der zielport des rechners zu dem verbunden werden soll
-                          version = socksVersion.SOCKS4a
-                        )
-  echo mySocket.GET("getip.111mb.de")
+                          # version = socksVersion.SOCKS4a
+                        )  
+  echo mySocket4a.GET("getip.111mb.de")
+  
   echo "\nDONE"
