@@ -21,5 +21,5 @@ the socks4a handshake (https://en.wikipedia.org/wiki/SOCKS)
 
 
 
-->> This is a demonstration. Nothing serious. <<-
-                  Handle with care!
+#This is a demonstration. Nothing serious.
+#Handle with care!
