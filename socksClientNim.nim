@@ -27,9 +27,7 @@ proc strToBytes(str:string): seq[char] =
   result = @[]
   for each in str:
     result.add( char(each) )
-
-  # is nim dooing this automatically ?? 
-  # result.add(char(0x00)) # we have to terminate the str with 0x00 
+  result.add(char(0x00)) # we have to terminate the str with 0x00 
   return result
 
 # echo dnsToBytes("getip.111mb.de")
@@ -133,7 +131,6 @@ proc socks4a(socksIp:string,socksPort:int,targetDns:string,targetPort:int) : Soc
   # field 5: the domain name of the host we want to contact, variable length, terminated with a null (0x00)  
   for each in strToBytes(targetDns):
     helo.add(char(each))
-  helo.add(char(0x00)  )
 
 
   so.send(charArrToStr(helo)) # we send socks header
