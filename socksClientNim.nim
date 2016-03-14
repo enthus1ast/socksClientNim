@@ -7,9 +7,9 @@ var L = newConsoleLogger()
 addHandler(L)
 
 
-type
-  socksVersion = enum
-    SOCKS4, SOCKS4A, SOCKS5
+# type
+#   socksVersion = enum
+#     SOCKS4, SOCKS4A, SOCKS5
 
 proc portToBytes(port:int): (char,char) =
   var byteHigh = math.floor(port / 256)
@@ -184,8 +184,7 @@ when isMainModule:
   #                         socksIp   = "127.0.0.1" ,   # die IP des SOCKS proxy
   #                         socksPort = 6655 ,          # der port auf dem der SOCKS proxy lauscht
   #                         targetIp = "85.214.59.56" , # die ip des rechners zu dem verbunden werden soll
-  #                         targetPort = 80 ,            # der zielport des rechners zu dem verbunden werden soll
-  #                         # version = socksVersion.SOCKS4a
+  #                         targetPort = 80             # der zielport des rechners zu dem verbunden werden soll
   #                       )
   # echo mySocket4.GET("getip.111mb.de")
 
@@ -193,8 +192,7 @@ when isMainModule:
                           socksIp   = "127.0.0.1" ,   # die IP des SOCKS proxy
                           socksPort = 9050 ,          # der port auf dem der SOCKS proxy lauscht
                           targetDns = "getip.111mb.de" , # der dns des rechners zu dem verbunden werden soll
-                          targetPort = 80 ,            # der zielport des rechners zu dem verbunden werden soll
-                          # version = socksVersion.SOCKS4a
+                          targetPort = 80             # der zielport des rechners zu dem verbunden werden soll
                         )  
   echo mySocket4a.GET("getip.111mb.de")
   
