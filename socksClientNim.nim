@@ -1,11 +1,28 @@
 discard """
+
+  SOCKS4 / SOCKS4a client in nim
+
   This implements a SOCKS4 proxy client.
+
   the `socks4` proc will return a nim socket, wich has done
   the socks4 handshake (https://en.wikipedia.org/wiki/SOCKS)
   (be aware that socks4 can only handle ip addresses)
 
-  This is a demonstration. Nothing serious.
-  Handle with care!
+  the `socks4a` proc will return a nim socket, wich has done
+  the socks4a handshake (https://en.wikipedia.org/wiki/SOCKS)
+  (this should work with tor)
+
+
+  features:
+    * socks4  ( tcp only ip  )
+    * socks4a ( tcp only dns )
+      -> Should work with tor
+    
+  
+
+
+  ->> This is a demonstration. Nothing serious. <<-
+                    Handle with care!
 """
 
 
@@ -203,11 +220,10 @@ when isMainModule:
   #                       )
   # echo mySocket4.GET("getip.111mb.de")
 
-  var mySocket4a  = socks4a( # Dies ist SOCKS version 4. NUR tcp und IP adressen!
-                          # Dies ist SOCKS v.4  NUR ip KEIN dns!!
+  var mySocket4a  = socks4a( # Dies ist SOCKS version 4a. TCP und DNS. Sollte durch tor funktionieren
                           socksIp   = "127.0.0.1" ,   # die IP des SOCKS proxy
                           socksPort = 9050 ,          # der port auf dem der SOCKS proxy lauscht
-                          targetDns = "getip.111mb.de" , # die ip des rechners zu dem verbunden werden soll
+                          targetDns = "getip.111mb.de" , # der dns des rechners zu dem verbunden werden soll
                           targetPort = 80 ,            # der zielport des rechners zu dem verbunden werden soll
                           # version = socksVersion.SOCKS4a
                         )  
