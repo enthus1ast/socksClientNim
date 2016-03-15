@@ -47,7 +47,7 @@ proc charArrToStr(ar:openArray[char]) : string=
   return outp
 
 
-proc socks4(socksIp:string,socksPort:int,targetIp:string,targetPort:int) : Socket =
+proc socks4 * (socksIp:string,socksPort:int,targetIp:string,targetPort:int) : Socket =
   discard """
     This returns a socket which is connected to the SOCKS proxy.
     The SOCKS handshake is done so the socket should be connected to the
@@ -91,7 +91,7 @@ proc socks4(socksIp:string,socksPort:int,targetIp:string,targetPort:int) : Socke
 
 
 
-proc socks4a(socksIp:string,socksPort:int,targetDns:string,targetPort:int) : Socket =
+proc socks4a * (socksIp:string,socksPort:int,targetDns:string,targetPort:int) : Socket =
   discard """
     This returns a socket which is connected to the SOCKS4a proxy.
     The SOCKS4a handshake is done so the socket should be connected to the
@@ -152,7 +152,7 @@ proc socks4a(socksIp:string,socksPort:int,targetDns:string,targetPort:int) : Soc
 
 
 
-proc GET(so: Socket,host:string) : string =
+proc GET * (so: Socket,host:string)  : string =
   discard """
     This makes a raw http get request, only for testing : )
     host is only changeing the http header.
