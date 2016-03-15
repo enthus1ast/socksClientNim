@@ -15,7 +15,8 @@
 ]##
 
 
-import sockets
+# import sockets
+import net
 import strutils
 import math
 import logging
@@ -57,7 +58,7 @@ proc strToBytes(str:string): seq[char] =
 
 proc connectSocket(so:Socket,socksIp:string,socksPort:int) =
   try:
-    so.connect(socksIp,TPort(socksPort))
+    so.connect(socksIp,Port(socksPort))
     info("[+] Connected to SOCKS proxy server")
   except:
     error("[-] Could not reach SOCKS proxy server")
@@ -78,7 +79,7 @@ proc socks4 * (socksIp:string,socksPort:int,targetIp:string,targetPort:int) : So
   ]##
   
 
-  var so = socket()
+  var so = newSocket()
   so.connectSocket(socksIp,socksPort)
 
   var port = portToBytes(targetPort)
@@ -120,7 +121,7 @@ proc socks4a * (socksIp:string,socksPort:int,targetDns:string,targetPort:int) : 
      This is able to connect to a tor .onion adress.
   ]##
 
-  var so = socket()
+  var so = newSocket()
   so.connectSocket(socksIp,socksPort)
 
   var port = portToBytes(targetPort)
