@@ -1,3 +1,20 @@
+##[ 
+  
+  Here you find some procedures to upgrade
+  a nim Socket to utilize a socks4 &&socks4a proxy server 
+
+  ( http://en.wikipedia.org/wiki/SOCKS )
+  ( https://www.ietf.org/rfc/rfc1928.txt ) 
+  
+  There is also a simple HTTP GET procedure which lets you test
+  the established socks connection.
+
+  Nim' httpclient is not yet supported
+
+  Be aware that this is just a demonstration!
+]##
+
+
 import sockets
 import strutils
 import math
@@ -12,18 +29,24 @@ addHandler(L)
 #     SOCKS4, SOCKS4A, SOCKS5
 
 proc portToBytes(port:int): (char,char) =
+  ## the socks protokoll needs a port encoded into two bytes
   var byteHigh = math.floor(port / 256)
   var byteLow  = port mod 256
   return (char(byteHigh),char(byteLow))
 
 
 proc ipToBytes(ip:string): seq[char] =
+  ## the socks protokoll needs the ip address encoded into a byte stream
+  ## if you use socks4a then this will be internally set to 
+  ## the invalid ip of 0.0.0.1.
   result = @[]
   for each in split(ip,'.'):
     result.add( char(parseInt(each)) )
   return result
 
 proc strToBytes(str:string): seq[char] = 
+  ## this is used to encode the (optional) username  
+  ## and the domain name for socks4a.
   result = @[]
   for each in str:
     result.add( char(each) )
@@ -48,16 +71,12 @@ proc charArrToStr(ar:openArray[char]) : string=
 
 
 proc socks4 * (socksIp:string,socksPort:int,targetIp:string,targetPort:int) : Socket =
-  discard """
+  ##[ 
     This returns a socket which is connected to the SOCKS proxy.
     The SOCKS handshake is done so the socket should be connected to the
     targetIP / targetPort
-
-
-    version is either SOCKS4 SOCKS4a
-    targetHostname only is used when socks `version` is SOCKS4a
-    when you use targetHostname , targetIp is ignored
-  """
+  ]##
+  
 
   var so = socket()
   so.connectSocket(socksIp,socksPort)
@@ -92,14 +111,15 @@ proc socks4 * (socksIp:string,socksPort:int,targetIp:string,targetPort:int) : So
 
 
 proc socks4a * (socksIp:string,socksPort:int,targetDns:string,targetPort:int) : Socket =
-  discard """
-    This returns a socket which is connected to the SOCKS4a proxy.
-    The SOCKS4a handshake is done so the socket should be connected to the
-    targetDns / targetPort
+  ##[ 
+     This returns a socket which is connected to the SOCKS4a proxy.
+     The SOCKS4a handshake is done so the socket should be connected to the
+     targetDns / targetPort
+     
+     SOCKS4a is able to ask the proxy to resolve the DNS.
+     This is able to connect to a tor .onion adress.
+  ]##
 
-    SOCKS4a is able to ask the proxy to resolve the DNS.
-    This is able to connect to a tor .onion adress.
-  """
   var so = socket()
   so.connectSocket(socksIp,socksPort)
 
@@ -153,19 +173,21 @@ proc socks4a * (socksIp:string,socksPort:int,targetDns:string,targetPort:int) : 
 
 
 proc GET * (so: Socket,host:string)  : string =
-  discard """
-    This makes a raw http get request, only for testing : )
-    host is only changeing the http header.
-    The socket has to be connected!
-  """
-  var httpGetHelo = "GET / HTTP/1.1\nHost: "&host&"\n\n"
+  ##[
+     This makes a raw http get request, only for testing : )
+     host is only changeing the http header.
+     The socket has to be connected!
+  ]##
 
+  var httpGetHelo = "GET / HTTP/1.1\nHost: "&host&"\n\n"
+  
+  
   try:
     so.send(httpGetHelo)
     info "[+] successfully send http get to remote server"
   except:
     error "[-] something breaks whil sending get request"
-
+  
   var data = "LEER"
   var size= 100000
   var timeout=20000
@@ -179,6 +201,7 @@ proc GET * (so: Socket,host:string)  : string =
 
 
 when isMainModule:
+
   # var mySocket4  = socks4( # Dies ist SOCKS version 4. NUR tcp und IP adressen!
   #                         # Dies ist SOCKS v.4  NUR ip KEIN dns!!
   #                         socksIp   = "127.0.0.1" ,   # die IP des SOCKS proxy
