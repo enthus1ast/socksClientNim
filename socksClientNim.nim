@@ -15,7 +15,8 @@
 ]##
 
 
-import sockets
+# import sockets
+import net
 import strutils
 import math
 import logging
@@ -38,7 +39,7 @@ proc portToBytes(port:int): (char,char) =
 proc ipToBytes(ip:string): seq[char] =
   ## the socks protokoll needs the ip address encoded into a byte stream
   ## if you use socks4a then this will be internally set to 
-  ## the invalid ip of 0.0.0.1.
+  ## the invalid ip of 0.0.0.1
   result = @[]
   for each in split(ip,'.'):
     result.add( char(parseInt(each)) )
@@ -57,7 +58,7 @@ proc strToBytes(str:string): seq[char] =
 
 proc connectSocket(so:Socket,socksIp:string,socksPort:int) =
   try:
-    so.connect(socksIp,TPort(socksPort))
+    so.connect(socksIp,Port(socksPort))
     info("[+] Connected to SOCKS proxy server")
   except:
     error("[-] Could not reach SOCKS proxy server")
@@ -78,7 +79,7 @@ proc socks4 * (socksIp:string,socksPort:int,targetIp:string,targetPort:int) : So
   ]##
   
 
-  var so = socket()
+  var so = newSocket()
   so.connectSocket(socksIp,socksPort)
 
   var port = portToBytes(targetPort)
@@ -94,13 +95,13 @@ proc socks4 * (socksIp:string,socksPort:int,targetIp:string,targetPort:int) : So
   var helo = [char(4), char(1), port[0], port[1] , ip[0], ip[1], ip[2], ip[3], char(0)]
   so.send(charArrToStr(helo)) # we send socks header
 
-  var data:string = "LEER"
+  var response:string = "LEER"
   var size: int = 8
   var timeout : int=1000
-  discard so.recv(data,size,timeout)
+  discard so.recv(response,size,timeout)
 
   # check if server has established the connection to the remote host
-  if data[0] == char(0) and data[1] == char(90):
+  if response[0] == char(0) and response[1] == char(90):
     info("[+] SOCKS server has successfully established the connection.")
   else:
     error("[-] SOCKS server does not connected us to our desired remotehost")
@@ -120,14 +121,12 @@ proc socks4a * (socksIp:string,socksPort:int,targetDns:string,targetPort:int) : 
      This is able to connect to a tor .onion adress.
   ]##
 
-  var so = socket()
+  var so = newSocket()
   so.connectSocket(socksIp,socksPort)
 
   var port = portToBytes(targetPort)
-  #var ip   = ipToBytes("0.0.0.1")  # when we use socks4a we have to use a dummy address
 
   var helo : seq[char] = @[]
-
   # field 0: SOCKS version number, 1 byte, must be 0x04 for this version
   helo.add(char(0x04))
 
@@ -147,7 +146,7 @@ proc socks4a * (socksIp:string,socksPort:int,targetDns:string,targetPort:int) : 
 
   # field 4: the user ID string, variable length, terminated with a null (0x00)
   helo.add(char(0x00))
-  # helo.add(char(0x00)  )
+
   # field 5: the domain name of the host we want to contact, variable length, terminated with a null (0x00)  
   for each in strToBytes(targetDns):
     helo.add(char(each))
@@ -155,13 +154,13 @@ proc socks4a * (socksIp:string,socksPort:int,targetDns:string,targetPort:int) : 
 
   so.send(charArrToStr(helo)) # we send socks header
 
-  var data:string = "LEER"
+  var response:string = ""
   var size: int = 8
   var timeout : int=20000
-  discard so.recv(data,size,timeout)
+  discard so.recv(response,size,timeout)
 
   # check if server has established the connection to the remote host
-  if data[0] == char(0) and data[1] == char(0x5a):
+  if response[0] == char(0) and response[1] == char(0x5a):
     info("[+] SOCKS4a server has successfully established the connection.")
   else:
     error("[-] SOCKS4a server does not connected us to our desired remotehost")
@@ -188,15 +187,15 @@ proc GET * (so: Socket,host:string)  : string =
   except:
     error "[-] something breaks whil sending get request"
   
-  var data = "LEER"
+  var response = ""
   var size= 100000
   var timeout=20000
   try:
-    var respLen = so.recv(data,size,timeout)
+    var respLen = so.recv(response,size,timeout)
     info "[+] made get request over SOCKS got " & $respLen & " bytes"
   except:
-    error "[-] something breaks while receiving data from remote http server"
-  return data
+    error "[-] something breaks while receiving response from remote http server"
+  return response
 
 
 
