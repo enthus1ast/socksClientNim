@@ -9,7 +9,7 @@
   There is also a simple HTTP GET procedure which lets you test
   the established socks connection.
 
-  Nim' httpclient is not yet supported
+  Nim httpclient is not yet supported
 
   Be aware that this is just a demonstration!
 ]##
