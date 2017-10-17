@@ -1,3 +1,5 @@
+For a more robust implementation have a look at https://github.com/enthus1ast/nimSocks
+# deprecated
 # SOCKS4 / SOCKS4a client in nim
 
 
